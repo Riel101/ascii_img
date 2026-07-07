@@ -1,35 +1,40 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
 	"image/png"
+	"io"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
+	"time"
+
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/math/fixed"
 
-	// "image/color"
 	_ "image/jpeg"
 	_ "image/png"
-	"log"
-	"os"
 )
 
-func loadImg(path string) image.Image {
+func loadImg(path string) (image.Image, error) {
 	imgData, err := os.Open(path)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	defer imgData.Close()
 
 	img, _, err := image.Decode(imgData)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	return img
+	return img, nil
 }
 
 func downScale(img *image.Gray, newW, newH int) *image.Gray {
@@ -61,17 +66,16 @@ func downScale(img *image.Gray, newW, newH int) *image.Gray {
 			}
 
 			avg := uint8(sum / count)
-			// Store avg in the output image
 			result.SetGray(x, y, color.Gray{Y: avg})
 		}
 	}
 	return result
 }
 
-func ASCIIToPNG(ascii, outputFile string) error {
+func ASCIIToPNG(ascii, outputFile, fontPath string) error {
 	lines := strings.Split(strings.TrimRight(ascii, "\n"), "\n")
 
-	fontBytes, err := os.ReadFile("JetBrainsMono-VariableFont_wght.ttf")
+	fontBytes, err := os.ReadFile(fontPath)
 	if err != nil {
 		return err
 	}
@@ -91,7 +95,6 @@ func ASCIIToPNG(ascii, outputFile string) error {
 	}
 	defer face.Close()
 
-	// Use a Drawer to measure text.
 	measure := &font.Drawer{
 		Face: face,
 	}
@@ -112,7 +115,6 @@ func ASCIIToPNG(ascii, outputFile string) error {
 
 	img := image.NewRGBA(image.Rect(0, 0, imgWidth, imgHeight))
 
-	// Dark gray background
 	draw.Draw(
 		img,
 		img.Bounds(),
@@ -148,15 +150,17 @@ func ASCIIToPNG(ascii, outputFile string) error {
 	return png.Encode(file, img)
 }
 
-func main() {
-	img := loadImg("riel2.jpeg")
+func convertImage(inputPath string, targetW int) (string, string, error) {
+	img, err := loadImg(inputPath)
+	if err != nil {
+		return "", "", err
+	}
 
 	grayImg := image.NewGray(img.Bounds())
 	draw.Draw(grayImg, img.Bounds(), img, image.Point{}, draw.Src)
 
-	targetW := 120
 	ratio := float64(grayImg.Bounds().Dy()) / float64(grayImg.Bounds().Dx())
-	targetH := int(float64(targetW) * ratio * 0.5) // *0.5 because terminal chars are ~2x tall
+	targetH := int(float64(targetW) * ratio * 0.5)
 
 	scaledGrayImg := downScale(grayImg, targetW, targetH)
 
@@ -169,55 +173,134 @@ func main() {
 			brightness = int(scaledGrayImg.GrayAt(x, y).Y)
 			count++
 			if scaledGrayImg.Stride == count {
-				fmt.Print("\n")
 				imgStr = append(imgStr, "\n")
 				count = 0
 			}
 			if brightness <= 25 {
-				fmt.Print(".")
 				imgStr = append(imgStr, ".")
-			} else if brightness <= 50{
-				fmt.Print(",")
+			} else if brightness <= 50 {
 				imgStr = append(imgStr, ",")
 			} else if brightness <= 75 {
-				fmt.Print(":")
 				imgStr = append(imgStr, ":")
 			} else if brightness <= 100 {
-				fmt.Print(";")
 				imgStr = append(imgStr, ";")
 			} else if brightness <= 125 {
-				fmt.Print("+")
 				imgStr = append(imgStr, "+")
 			} else if brightness < 150 {
-				fmt.Print("x")
 				imgStr = append(imgStr, "x")
 			} else if brightness <= 175 {
-				fmt.Print("%")
 				imgStr = append(imgStr, "%")
 			} else if brightness <= 200 {
-				fmt.Print("$")
 				imgStr = append(imgStr, "$")
 			} else if brightness <= 225 {
-				fmt.Print("@")
 				imgStr = append(imgStr, "@")
 			} else {
-				fmt.Print("#")
 				imgStr = append(imgStr, "#")
 			}
 		}
 	}
 
-	// save the edited image
-	// newImg, err := os.Create("Output.txt")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer newImg.Close()
+	ascii := strings.Join(imgStr, "")
+	outputFile := fmt.Sprintf("output_%d.png", time.Now().UnixNano())
+	if err := ASCIIToPNG(ascii, outputFile, "JetBrainsMono-VariableFont_wght.ttf"); err != nil {
+		return "", "", err
+	}
 
-	// // png.Encode(newImg, grayImg)
-
-	// newImg.WriteString(strings.Join(imgStr, ""))
-
-	ASCIIToPNG(strings.Join(imgStr, ""), "output.png")
-
+	return ascii, outputFile, nil
 }
+
+type convertResponse struct {
+	Ascii       string `json:"ascii"`
+	DownloadURL string `json:"downloadUrl"`
+	Error       string `json:"error,omitempty"`
+}
+
+func handleConvert(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	r.ParseMultipartForm(32 << 20)
+
+	file, _, err := r.FormFile("image")
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(convertResponse{Error: "No image file provided"})
+		return
+	}
+	defer file.Close()
+
+	tmpFile, err := os.CreateTemp("", "upload-*.png")
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(convertResponse{Error: "Failed to process upload"})
+		return
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err := io.Copy(tmpFile, file); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(convertResponse{Error: "Failed to save upload"})
+		return
+	}
+	tmpFile.Close()
+
+	ascii, outputFile, err := convertImage(tmpFile.Name(), 120)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(convertResponse{Error: err.Error()})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(convertResponse{
+		Ascii:       ascii,
+		DownloadURL: "/output/" + outputFile,
+	})
+}
+
+func handleDownload(w http.ResponseWriter, r *http.Request) {
+	filename := strings.TrimPrefix(r.URL.Path, "/output/")
+	safe := filepath.Base(filename)
+	w.Header().Set("Content-Disposition", "attachment; filename=output.png")
+	http.ServeFile(w, r, safe)
+	os.Remove(safe)
+}
+
+func cors(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+}
+
+func main() {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cors(w)
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		switch {
+		case r.URL.Path == "/convert":
+			handleConvert(w, r)
+		case strings.HasPrefix(r.URL.Path, "/output/"):
+			handleDownload(w, r)
+		case r.URL.Path == "/":
+			http.ServeFile(w, r, "index.html")
+		default:
+			http.FileServer(http.Dir(".")).ServeHTTP(w, r)
+		}
+	})
+
+	port := "8080"
+	if p := os.Getenv("PORT"); p != "" {
+		port = p
+	}
+
+	fmt.Printf("• ASCII Art Converter •\n")
+	fmt.Printf("  Server running at http://localhost:%s\n", port)
+	log.Fatal(http.ListenAndServe(":"+port, handler))
+}
+
