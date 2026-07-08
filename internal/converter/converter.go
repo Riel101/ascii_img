@@ -109,7 +109,7 @@ func asciiToPNG(ascii string) ([]byte, error) {
 	draw.Draw(
 		img,
 		img.Bounds(),
-		&image.Uniform{C: color.RGBA{40, 40, 40, 255}},
+		&image.Uniform{C: color.RGBA{25, 25, 25, 255}},
 		image.Point{},
 		draw.Src,
 	)
