@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    { "source": "/convert", "destination": "/api/convert" }
+  ],
+  "functions": {
+    "api/convert.go": {
+      "memory": 512,
+      "maxDuration": 30
+    }
+  }
+}

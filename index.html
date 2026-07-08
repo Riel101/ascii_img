@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASCII ART CONVERTER</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&display=swap');
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #0c0c0c;
+  --terminal-bg: #111111;
+  --green: #00ff41;
+  --green-dim: #00aa28;
+  --green-dark: #005a14;
+  --green-glow: rgba(0, 255, 65, 0.15);
+  --text: #c8e6c9;
+  --text-dim: #558b2f;
+  --amber: #ffb300;
+  --red: #ff1744;
+  --scanline: rgba(0, 0, 0, 0.08);
+  --border: #1a3a1a;
+}
+
+body {
+  background: var(--bg);
+  color: var(--green);
+  font-family: 'Fira Code', 'JetBrains Mono', 'Cascadia Code', monospace;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 20px;
+  overflow-x: hidden;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    var(--scanline) 2px,
+    var(--scanline) 4px
+  );
+  pointer-events: none;
+  z-index: 999;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(ellipse at center, transparent 65%, rgba(0,0,0,0.6) 100%);
+  pointer-events: none;
+  z-index: 998;
+}
+
+.terminal {
+  width: 100%;
+  max-width: 1100px;
+  background: var(--terminal-bg);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 30px 35px 35px;
+  position: relative;
+  z-index: 1;
+  box-shadow:
+    0 0 40px var(--green-glow),
+    inset 0 0 60px rgba(0,0,0,0.5);
+}
+
+.terminal::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: 30%; right: 30%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--green), transparent);
+  opacity: 0.6;
+}
+
+.terminal-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--border);
+}
+
+.terminal-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.terminal-dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+.terminal-dot.amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+.terminal-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+.terminal-title {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-left: auto;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.banner {
+  text-align: center;
+  margin: 15px 0 30px;
+  line-height: 1.15;
+  user-select: none;
+}
+
+.banner pre {
+  color: var(--green);
+  font-size: clamp(6px, 1.2vw, 13px);
+  line-height: 1.1;
+  text-shadow: 0 0 8px var(--green-glow), 0 0 20px rgba(0,255,65,0.05);
+  font-family: 'Fira Code', 'JetBrains Mono', monospace;
+}
+
+.banner-sub {
+  color: var(--text-dim);
+  font-size: 13px;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  margin-top: 8px;
+}
+
+.prompt-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.prompt-line .prompt {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.prompt-line .flag {
+  color: var(--amber);
+}
+
+.prompt-line .input-label {
+  color: var(--text-dim);
+}
+
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 50px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 20px;
+  position: relative;
+  background: rgba(0,255,65,0.02);
+}
+
+.upload-zone:hover,
+.upload-zone.drag-over {
+  border-color: var(--green);
+  background: rgba(0,255,65,0.06);
+  box-shadow: 0 0 30px var(--green-glow);
+}
+
+.upload-zone .icon {
+  font-size: 48px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  display: block;
+}
+
+.upload-zone .text-main {
+  font-size: 16px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.upload-zone .text-sub {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.upload-zone .file-info {
+  display: none;
+  margin-top: 15px;
+  padding: 8px 16px;
+  background: rgba(0,255,65,0.08);
+  border: 1px solid var(--green-dark);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--green);
+}
+
+.upload-zone.has-file .file-info {
+  display: inline-block;
+}
+
+.upload-zone.has-file .icon,
+.upload-zone.has-file .text-main,
+.upload-zone.has-file .text-sub {
+  display: none;
+}
+
+.upload-zone.has-file .placeholder-content {
+  display: none;
+}
+
+.upload-zone input[type="file"] {
+  display: none;
+}
+
+.prompt-line.submit-line {
+  margin-bottom: 0;
+}
+
+.btn-convert {
+  background: transparent;
+  border: 1px solid var(--green);
+  color: var(--green);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-convert:hover:not(:disabled) {
+  background: var(--green);
+  color: var(--bg);
+  box-shadow: 0 0 25px var(--green-glow), 0 0 50px var(--green-glow);
+}
+
+.btn-convert:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: var(--text-dim);
+}
+
+.convert-bar {
+  display: none;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 10px 16px;
+  background: rgba(0,255,65,0.04);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.convert-bar.active {
+  display: flex;
+}
+
+.convert-bar .spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--green-dark);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.convert-bar .status-text {
+  color: var(--text);
+}
+
+.convert-bar .dots::after {
+  content: '';
+  animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0%   { content: ''; }
+  25%  { content: '.'; }
+  50%  { content: '..'; }
+  75%  { content: '...'; }
+  100% { content: ''; }
+}
+
+.preview-section {
+  display: none;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.preview-section.active {
+  display: block;
+}
+
+.preview-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.preview-tab {
+  padding: 6px 18px;
+  font-size: 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.preview-tab.active {
+  color: var(--green);
+  border-color: var(--green);
+  background: rgba(0,255,65,0.06);
+}
+
+.preview-pane {
+  display: none;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px;
+  overflow: auto;
+  min-height: 200px;
+  max-height: 500px;
+}
+
+.preview-pane.active {
+  display: block;
+}
+
+.preview-pane img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 2px;
+}
+
+.preview-pane pre {
+  color: var(--text);
+  font-size: clamp(4px, 0.6vw, 7.5px);
+  line-height: 1.1;
+  letter-spacing: 0;
+  white-space: pre;
+  font-family: 'Fira Code', 'JetBrains Mono', monospace;
+}
+
+.download-bar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding: 14px 20px;
+  background: rgba(0,255,65,0.06);
+  border: 1px solid var(--green-dark);
+  border-radius: 4px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.download-bar.active {
+  display: flex;
+}
+
+.download-bar .size-info {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.btn-download {
+  background: transparent;
+  border: 1px solid var(--green);
+  color: var(--green);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-download:hover {
+  background: var(--green);
+  color: var(--bg);
+  box-shadow: 0 0 25px var(--green-glow);
+}
+
+.footer-prompt {
+  margin-top: 25px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.footer-prompt .prompt {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.footer-prompt .cursor {
+  display: inline-block;
+  width: 10px;
+  height: 18px;
+  background: var(--green);
+  animation: blink 1s step-end infinite;
+  margin-left: 2px;
+  vertical-align: middle;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.error-message {
+  display: none;
+  color: var(--red);
+  font-size: 13px;
+  margin-top: 12px;
+  padding: 8px 14px;
+  border: 1px solid var(--red);
+  border-radius: 4px;
+  background: rgba(255,23,68,0.06);
+}
+
+.error-message.active {
+  display: block;
+}
+
+.success-badge {
+  color: var(--green);
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+@media (max-width: 700px) {
+  .terminal {
+    padding: 18px 16px 22px;
+  }
+  .banner pre {
+    font-size: clamp(4px, 1.5vw, 8px);
+  }
+  .preview-pane pre {
+    font-size: clamp(3px, 1.2vw, 6px);
+  }
+  .upload-zone {
+    padding: 30px 14px;
+  }
+  .preview-tabs {
+    flex-wrap: wrap;
+  }
+  .download-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .btn-download {
+    justify-content: center;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="terminal">
+  <div class="terminal-header">
+    <div class="terminal-dot red"></div>
+    <div class="terminal-dot amber"></div>
+    <div class="terminal-dot green"></div>
+    <div class="terminal-title">img2ascii v1.0 — terminal session</div>
+  </div>
+
+  <div class="banner">
+  <pre>
+ __        __   _                          
+ \ \      / /__| | ___ ___  _ __ ___   ___
+  \ \ /\ / / _ \ |/ __/ _ \| '_ ` _ \ / _ \
+   \ V  V /  __/ | (_| (_) | | | | | |  __/
+    \_/\_/ \___|_|\___\___/|_| |_| |_|\___|
+</pre>
+    <div class="banner-sub">◈ image to ascii converter ◈</div>
+  </div>
+
+  <div class="prompt-line">
+    <span class="prompt">$</span>
+    <span style="color:var(--green-dim)">./img2ascii</span>
+    <span class="flag">--input</span>
+    <span class="input-label">select image file</span>
+  </div>
+
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept="image/jpeg,image/png">
+    <div class="placeholder-content">
+      <span class="icon">◈</span>
+      <div class="text-main">Drop image here or click to browse</div>
+      <div class="text-sub">Supports PNG, JPEG</div>
+    </div>
+    <div class="file-info" id="fileInfo"></div>
+  </div>
+
+  <div class="prompt-line submit-line">
+    <span class="prompt">$</span>
+    <span style="color:var(--green-dim)">./img2ascii</span>
+    <span class="flag">--run</span>
+    <button class="btn-convert" id="btnConvert" disabled>Convert</button>
+  </div>
+
+  <div class="convert-bar" id="convertBar">
+    <div class="spinner"></div>
+    <span class="status-text">Rendering ASCII art<span class="dots"></span></span>
+    <span class="success-badge" style="display:none" id="successBadge">✔ done</span>
+  </div>
+
+  <div class="error-message" id="errorMsg"></div>
+
+  <div class="preview-section" id="previewSection">
+    <div class="preview-tabs">
+      <button class="preview-tab active" data-tab="ascii">╔ ASCII ╗</button>
+      <button class="preview-tab" data-tab="original">╔ original ╗</button>
+      <button class="preview-tab" data-tab="outputpng">╔ output.png ╗</button>
+    </div>
+    <div class="preview-pane active" id="pane-ascii">
+      <pre id="asciiOutput"></pre>
+    </div>
+    <div class="preview-pane" id="pane-original">
+      <img id="originalPreview" alt="Original image">
+    </div>
+    <div class="preview-pane" id="pane-outputpng">
+      <img id="outputPreview" alt="ASCII rendered PNG">
+    </div>
+  </div>
+
+  <div class="download-bar" id="downloadBar">
+    <div>
+      <div id="downloadLabel" style="color:var(--text);font-size:13px;margin-bottom:2px;">output.png</div>
+      <div class="size-info" id="sizeInfo"></div>
+    </div>
+    <a class="btn-download" id="downloadBtn" href="#" download>
+      ⬇ download
+    </a>
+  </div>
+
+  <div class="footer-prompt">
+    <span class="prompt">$</span>
+    <span style="color:var(--text-dim)">awaiting input</span>
+    <span class="cursor"></span>
+  </div>
+</div>
+
+<script>
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const btnConvert = document.getElementById('btnConvert');
+const convertBar = document.getElementById('convertBar');
+const successBadge = document.getElementById('successBadge');
+const errorMsg = document.getElementById('errorMsg');
+const previewSection = document.getElementById('previewSection');
+const asciiOutput = document.getElementById('asciiOutput');
+const originalPreview = document.getElementById('originalPreview');
+const outputPreview = document.getElementById('outputPreview');
+const downloadBar = document.getElementById('downloadBar');
+const downloadBtn = document.getElementById('downloadBtn');
+const downloadLabel = document.getElementById('downloadLabel');
+const sizeInfo = document.getElementById('sizeInfo');
+const footerPrompt = document.querySelector('.footer-prompt span:last-child');
+
+let selectedFile = null;
+let asciiResult = '';
+let pngDataUrl = '';
+
+uploadZone.addEventListener('click', () => fileInput.click());
+
+uploadZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadZone.classList.add('drag-over');
+});
+
+uploadZone.addEventListener('dragleave', () => {
+  uploadZone.classList.remove('drag-over');
+});
+
+uploadZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  if (e.dataTransfer.files.length) {
+    handleFile(e.dataTransfer.files[0]);
+  }
+});
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) {
+    handleFile(fileInput.files[0]);
+  }
+});
+
+function handleFile(file) {
+  const validTypes = ['image/jpeg', 'image/png'];
+  if (!validTypes.includes(file.type)) {
+    showError('Unsupported format. Please upload a PNG or JPEG image.');
+    return;
+  }
+
+  selectedFile = file;
+  uploadZone.classList.add('has-file');
+  fileInfo.textContent = `📄 ${file.name}  (${formatSize(file.size)})`;
+  btnConvert.disabled = false;
+  errorMsg.classList.remove('active');
+  footerPrompt.textContent = `ready: ${file.name}`;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    originalPreview.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+document.querySelectorAll('.preview-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.preview-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.preview-pane').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('pane-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+btnConvert.addEventListener('click', async () => {
+  if (!selectedFile) return;
+
+  btnConvert.disabled = true;
+  convertBar.classList.add('active');
+  successBadge.style.display = 'none';
+  errorMsg.classList.remove('active');
+  footerPrompt.textContent = 'converting...';
+
+  const formData = new FormData();
+  formData.append('image', selectedFile);
+
+  try {
+    const res = await fetch('/convert', { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (data.error) {
+      showError(data.error);
+      convertBar.classList.remove('active');
+      btnConvert.disabled = false;
+      footerPrompt.textContent = 'error — try again';
+      return;
+    }
+
+    asciiResult = data.ascii;
+    pngDataUrl = data.pngDataUrl;
+
+    asciiOutput.textContent = asciiResult;
+
+    setTimeout(() => {
+      outputPreview.src = pngDataUrl;
+    }, 100);
+
+    successBadge.style.display = 'inline';
+    setTimeout(() => {
+      convertBar.classList.remove('active');
+    }, 600);
+
+    previewSection.classList.add('active');
+    downloadBar.classList.add('active');
+    downloadBtn.href = pngDataUrl;
+    downloadLabel.textContent = selectedFile.name.replace(/\.[^.]+$/, '') + '_ascii.png';
+
+    footerPrompt.textContent = 'conversion complete';
+
+  } catch (err) {
+    showError('Connection failed. Is the server running?');
+    convertBar.classList.remove('active');
+    btnConvert.disabled = false;
+    footerPrompt.textContent = 'connection error';
+  }
+});
+
+function showError(msg) {
+  errorMsg.textContent = '✖ ' + msg;
+  errorMsg.classList.add('active');
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+</script>
+</body>
+</html>
