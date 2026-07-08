@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: ascii-img
+    env: go
+    buildCommand: go build -o img2ascii
+    startCommand: ./img2ascii

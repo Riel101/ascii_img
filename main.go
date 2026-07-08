@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	_"strings"
 
 	"ascii-converter/internal/converter"
 )
