@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ASCII ART CONVERTER</title>
+<title>PIC2ASCII — selfie terminal</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&display=swap');
 
@@ -135,6 +135,40 @@ body::after {
   letter-spacing: 6px;
   text-transform: uppercase;
   margin-top: 8px;
+}
+
+.mode-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.mode-btn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 10px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.mode-btn:hover {
+  border-color: var(--green-dim);
+  color: var(--text);
+  background: rgba(0,255,65,0.04);
+}
+
+.mode-btn.active {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(0,255,65,0.08);
+  box-shadow: 0 0 20px var(--green-glow);
 }
 
 .prompt-line {
@@ -371,6 +405,73 @@ body::after {
   font-family: 'Fira Code', 'JetBrains Mono', monospace;
 }
 
+.ascii-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ascii-toolbar .toolbar-label {
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+
+.char-set-btn {
+  padding: 4px 12px;
+  font-size: 11px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.char-set-btn:hover {
+  border-color: var(--green-dim);
+  color: var(--text);
+}
+
+.char-set-btn.active {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(0,255,65,0.08);
+}
+
+.btn-copy {
+  padding: 4px 14px;
+  font-size: 11px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--amber);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-left: auto;
+}
+
+.btn-copy:hover {
+  border-color: var(--amber);
+  background: rgba(255,179,0,0.08);
+  box-shadow: 0 0 15px rgba(255,179,0,0.1);
+}
+
+.btn-copy.copied {
+  border-color: var(--green);
+  color: var(--green);
+}
+
 .download-bar {
   display: none;
   align-items: center;
@@ -469,6 +570,198 @@ body::after {
   letter-spacing: 1px;
 }
 
+/* Camera Modal */
+.camera-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.camera-overlay.active {
+  display: flex;
+}
+
+.camera-modal {
+  width: 100%;
+  max-width: 640px;
+  background: var(--terminal-bg);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 0 60px var(--green-glow), 0 0 120px rgba(0,0,0,0.8);
+  overflow: hidden;
+  position: relative;
+}
+
+.camera-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.camera-modal-header .cam-title {
+  color: var(--text-dim);
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.camera-modal-header .cam-close {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 4px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.camera-modal-header .cam-close:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.camera-viewport {
+  position: relative;
+  background: #000;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-viewport video,
+.camera-viewport canvas {
+  width: 100%;
+  display: block;
+}
+
+.camera-viewport .cam-placeholder {
+  color: var(--text-dim);
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.camera-controls {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.btn-cam {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 10px 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.btn-cam:hover {
+  border-color: var(--green-dim);
+  color: var(--green);
+  box-shadow: 0 0 20px var(--green-glow);
+}
+
+.btn-cam.primary {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.btn-cam.primary:hover {
+  background: var(--green);
+  color: var(--bg);
+  box-shadow: 0 0 25px var(--green-glow);
+}
+
+.btn-cam.danger {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.btn-cam.danger:hover {
+  background: var(--red);
+  color: var(--bg);
+  box-shadow: 0 0 25px rgba(255,23,68,0.3);
+}
+
+.btn-cam.confirm {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.btn-cam.confirm:hover {
+  background: var(--amber);
+  color: var(--bg);
+  box-shadow: 0 0 25px rgba(255,179,0,0.3);
+}
+
+.camera-flash {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: none;
+}
+
+.camera-flash.snap {
+  animation: flash 0.15s ease-out;
+}
+
+@keyframes flash {
+  0% { opacity: 0.6; }
+  100% { opacity: 0; }
+}
+
+.camera-viewport .captured-preview {
+  width: 100%;
+  display: none;
+}
+
+.camera-viewport.has-captured .captured-preview {
+  display: block;
+}
+
+.camera-viewport.has-captured video {
+  display: none;
+}
+
+.camera-viewport.has-captured .cam-placeholder {
+  display: none;
+}
+
+.camera-info {
+  display: none;
+  color: var(--text-dim);
+  font-size: 11px;
+  padding: 8px 18px;
+  background: rgba(0,0,0,0.3);
+  border-top: 1px solid var(--border);
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+.camera-info.active {
+  display: block;
+}
+
 @media (max-width: 700px) {
   .terminal {
     padding: 18px 16px 22px;
@@ -492,6 +785,19 @@ body::after {
   .btn-download {
     justify-content: center;
   }
+  .mode-selector {
+    flex-direction: column;
+  }
+  .camera-controls {
+    flex-wrap: wrap;
+  }
+  .ascii-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .btn-copy {
+    margin-left: 0;
+  }
 }
 </style>
 </head>
@@ -502,40 +808,59 @@ body::after {
     <div class="terminal-dot red"></div>
     <div class="terminal-dot amber"></div>
     <div class="terminal-dot green"></div>
-    <div class="terminal-title">img2ascii v1.0 — terminal session</div>
+    <div class="terminal-title">pic2ascii v1.0 — selfie session</div>
   </div>
 
   <div class="banner">
-  <pre>
- __        __   _                          
- \ \      / /__| | ___ ___  _ __ ___   ___
-  \ \ /\ / / _ \ |/ __/ _ \| '_ ` _ \ / _ \
-   \ V  V /  __/ | (_| (_) | | | | | |  __/
-    \_/\_/ \___|_|\___\___/|_| |_| |_|\___|
-</pre>
-    <div class="banner-sub">◈ image to ascii converter ◈</div>
+    <pre>
+      ██████╗ ██╗ ██████╗██████╗  █████╗ ███████╗ ██████╗██╗██╗
+      ██╔══██╗██║██╔════╝╚════██╗██╔══██╗██╔════╝██╔════╝██║██║
+      ██████╔╝██║██║      █████╔╝███████║███████╗██║     ██║██║
+      ██╔═══╝ ██║██║     ██╔═══╝ ██╔══██║╚════██║██║     ██║██║
+      ██║     ██║╚██████╗███████╗██║  ██║███████║╚██████╗██║██║
+      ╚═╝     ╚═╝ ╚═════╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝╚═╝
+    </pre>
+    <div class="banner-sub">◈ selfie & picture to ascii ◈</div>
   </div>
 
   <div class="prompt-line">
     <span class="prompt">$</span>
-    <span style="color:var(--green-dim)">./img2ascii</span>
-    <span class="flag">--input</span>
-    <span class="input-label">select image file</span>
+    <span style="color:var(--green-dim)">./pic2ascii</span>
+    <span class="flag">--mode</span>
+    <span class="input-label">select input method</span>
   </div>
 
-  <div class="upload-zone" id="uploadZone">
-    <input type="file" id="fileInput" accept="image/jpeg,image/png">
-    <div class="placeholder-content">
-      <span class="icon">◈</span>
-      <div class="text-main">Drop image here or click to browse</div>
-      <div class="text-sub">Supports PNG, JPEG</div>
+  <div class="mode-selector">
+    <button class="mode-btn active" data-mode="upload">
+      📁 upload photo
+    </button>
+    <button class="mode-btn" data-mode="camera">
+      📷 capture selfie
+    </button>
+  </div>
+
+  <div id="uploadSection">
+    <div class="prompt-line">
+      <span class="prompt">$</span>
+      <span style="color:var(--green-dim)">./pic2ascii</span>
+      <span class="flag">--input</span>
+      <span class="input-label">select image file</span>
     </div>
-    <div class="file-info" id="fileInfo"></div>
+
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept="image/jpeg,image/png">
+      <div class="placeholder-content">
+        <span class="icon">◈</span>
+        <div class="text-main">Drop image here or click to browse</div>
+        <div class="text-sub">Supports PNG, JPEG</div>
+      </div>
+      <div class="file-info" id="fileInfo"></div>
+    </div>
   </div>
 
   <div class="prompt-line submit-line">
     <span class="prompt">$</span>
-    <span style="color:var(--green-dim)">./img2ascii</span>
+    <span style="color:var(--green-dim)">./pic2ascii</span>
     <span class="flag">--run</span>
     <button class="btn-convert" id="btnConvert" disabled>Convert</button>
   </div>
@@ -555,6 +880,13 @@ body::after {
       <button class="preview-tab" data-tab="outputpng">╔ output.png ╗</button>
     </div>
     <div class="preview-pane active" id="pane-ascii">
+      <div class="ascii-toolbar">
+        <span class="toolbar-label">charset:</span>
+        <button class="char-set-btn active" data-set="standard">standard</button>
+        <button class="char-set-btn" data-set="inverted">inverted</button>
+        <button class="char-set-btn" data-set="blocks">blocks</button>
+        <button class="btn-copy" id="btnCopy">📋 copy</button>
+      </div>
       <pre id="asciiOutput"></pre>
     </div>
     <div class="preview-pane" id="pane-original">
@@ -577,8 +909,34 @@ body::after {
 
   <div class="footer-prompt">
     <span class="prompt">$</span>
-    <span style="color:var(--text-dim)">awaiting input</span>
+    <span id="footerStatus" style="color:var(--text-dim)">awaiting input</span>
     <span class="cursor"></span>
+  </div>
+</div>
+
+<!-- Camera Modal -->
+<div class="camera-overlay" id="cameraOverlay">
+  <div class="camera-modal">
+    <div class="camera-modal-header">
+      <div class="terminal-dot red"></div>
+      <div class="terminal-dot amber"></div>
+      <div class="terminal-dot green"></div>
+      <span class="cam-title">📷 capture selfie</span>
+      <button class="cam-close" id="camClose">✕</button>
+    </div>
+    <div class="camera-viewport" id="cameraViewport">
+      <video id="cameraVideo" autoplay muted playsinline></video>
+      <canvas id="cameraCanvas" style="display:none"></canvas>
+      <img class="captured-preview" id="capturedPreview" alt="Captured">
+      <div class="cam-placeholder" id="camPlaceholder">initializing camera...</div>
+      <div class="camera-flash" id="cameraFlash"></div>
+    </div>
+    <div class="camera-controls" id="cameraControls">
+      <button class="btn-cam primary" id="btnSnap">📸 snap</button>
+      <button class="btn-cam confirm" id="btnUse" style="display:none">✓ use this photo</button>
+      <button class="btn-cam danger" id="btnRetake" style="display:none">↺ retake</button>
+    </div>
+    <div class="camera-info" id="cameraInfo">press SNAP to capture</div>
   </div>
 </div>
 
@@ -598,11 +956,55 @@ const downloadBar = document.getElementById('downloadBar');
 const downloadBtn = document.getElementById('downloadBtn');
 const downloadLabel = document.getElementById('downloadLabel');
 const sizeInfo = document.getElementById('sizeInfo');
-const footerPrompt = document.querySelector('.footer-prompt span:last-child');
+const footerStatus = document.getElementById('footerStatus');
+const modeBtns = document.querySelectorAll('.mode-btn');
+const uploadSection = document.getElementById('uploadSection');
+const cameraOverlay = document.getElementById('cameraOverlay');
+const cameraVideo = document.getElementById('cameraVideo');
+const cameraCanvas = document.getElementById('cameraCanvas');
+const capturedPreview = document.getElementById('capturedPreview');
+const camPlaceholder = document.getElementById('camPlaceholder');
+const cameraViewport = document.getElementById('cameraViewport');
+const cameraFlash = document.getElementById('cameraFlash');
+const cameraInfo = document.getElementById('cameraInfo');
+const btnSnap = document.getElementById('btnSnap');
+const btnUse = document.getElementById('btnUse');
+const btnRetake = document.getElementById('btnRetake');
+const camClose = document.getElementById('camClose');
+const charSetBtns = document.querySelectorAll('.char-set-btn');
+const btnCopy = document.getElementById('btnCopy');
+const asciiToolbar = document.querySelector('.ascii-toolbar');
 
 let selectedFile = null;
 let asciiResult = '';
+let asciiOriginal = '';
 let pngDataUrl = '';
+let cameraStream = null;
+let capturedBlob = null;
+
+const CHAR_SETS = {
+  standard: '.,:;+x%$@#',
+  inverted: '#@$%x+;:,.',
+  blocks: ' ░▒▓█'
+};
+
+function getCharSet(set) {
+  return CHAR_SETS[set] || CHAR_SETS.standard;
+}
+
+function applyCharSet(text, set) {
+  const chars = getCharSet(set);
+  return text.split('').map(c => {
+    if (c === '\n') return '\n';
+    const idx = '.,:;+x%$@#'.indexOf(c);
+    if (idx === -1) return c;
+    if (set === 'blocks') {
+      const level = Math.floor((idx / 10) * 5);
+      return chars[Math.min(level, chars.length - 1)];
+    }
+    return chars[idx] || c;
+  }).join('');
+}
 
 uploadZone.addEventListener('click', () => fileInput.click());
 
@@ -641,7 +1043,7 @@ function handleFile(file) {
   fileInfo.textContent = `📄 ${file.name}  (${formatSize(file.size)})`;
   btnConvert.disabled = false;
   errorMsg.classList.remove('active');
-  footerPrompt.textContent = `ready: ${file.name}`;
+  footerStatus.textContent = `ready: ${file.name}`;
 
   const reader = new FileReader();
   reader.onload = (e) => {
@@ -649,6 +1051,134 @@ function handleFile(file) {
   };
   reader.readAsDataURL(file);
 }
+
+modeBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    modeBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const mode = btn.dataset.mode;
+    if (mode === 'upload') {
+      uploadSection.style.display = 'block';
+      if (cameraStream) stopCamera();
+      cameraOverlay.classList.remove('active');
+    } else {
+      uploadSection.style.display = 'none';
+      openCamera();
+    }
+  });
+});
+
+function openCamera() {
+  cameraOverlay.classList.add('active');
+  camPlaceholder.textContent = 'initializing camera...';
+  camPlaceholder.style.display = 'block';
+  cameraVideo.style.display = 'none';
+  cameraViewport.classList.remove('has-captured');
+  btnSnap.style.display = 'inline-block';
+  btnUse.style.display = 'none';
+  btnRetake.style.display = 'none';
+  cameraInfo.textContent = 'requesting camera access...';
+  cameraInfo.classList.add('active');
+  capturedPreview.style.display = 'none';
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } })
+    .then(stream => {
+      cameraStream = stream;
+      cameraVideo.srcObject = stream;
+      cameraVideo.onloadedmetadata = () => {
+        cameraVideo.play();
+        cameraVideo.style.display = 'block';
+        camPlaceholder.style.display = 'none';
+        cameraInfo.textContent = 'press SNAP to capture';
+      };
+    })
+    .catch(err => {
+      camPlaceholder.textContent = '✖ camera access denied or unavailable';
+      cameraInfo.classList.remove('active');
+      showError('Camera access required for selfie mode. Grant permission or use file upload.');
+    });
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  cameraVideo.srcObject = null;
+}
+
+function snapPhoto() {
+  if (!cameraStream) return;
+  const video = cameraVideo;
+  const canvas = cameraCanvas;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+  canvas.toBlob(blob => {
+    capturedBlob = blob;
+    const url = URL.createObjectURL(blob);
+    capturedPreview.src = url;
+    capturedPreview.style.display = 'block';
+    cameraViewport.classList.add('has-captured');
+    cameraVideo.style.display = 'none';
+    camPlaceholder.style.display = 'none';
+    btnSnap.style.display = 'none';
+    btnUse.style.display = 'inline-block';
+    btnRetake.style.display = 'inline-block';
+    cameraInfo.textContent = 'review your selfie — use or retake';
+  }, 'image/png');
+
+  cameraFlash.classList.remove('snap');
+  void cameraFlash.offsetWidth;
+  cameraFlash.classList.add('snap');
+}
+
+function usePhoto() {
+  if (!capturedBlob) return;
+  const file = new File([capturedBlob], 'selfie.png', { type: 'image/png' });
+  stopCamera();
+  cameraOverlay.classList.remove('active');
+  handleFile(file);
+  modeBtns.forEach(b => b.classList.remove('active'));
+  document.querySelector('[data-mode="upload"]').classList.add('active');
+  uploadSection.style.display = 'block';
+  footerStatus.textContent = 'selfie captured ✓';
+}
+
+function retakePhoto() {
+  capturedBlob = null;
+  cameraViewport.classList.remove('has-captured');
+  capturedPreview.style.display = 'none';
+  cameraVideo.style.display = 'block';
+  camPlaceholder.style.display = 'none';
+  btnSnap.style.display = 'inline-block';
+  btnUse.style.display = 'none';
+  btnRetake.style.display = 'none';
+  cameraInfo.textContent = 'press SNAP to capture';
+}
+
+btnSnap.addEventListener('click', snapPhoto);
+btnUse.addEventListener('click', usePhoto);
+btnRetake.addEventListener('click', retakePhoto);
+
+camClose.addEventListener('click', () => {
+  stopCamera();
+  cameraOverlay.classList.remove('active');
+  modeBtns.forEach(b => b.classList.remove('active'));
+  document.querySelector('[data-mode="upload"]').classList.add('active');
+  uploadSection.style.display = 'block';
+  footerStatus.textContent = 'camera closed';
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && cameraOverlay.classList.contains('active')) {
+    camClose.click();
+  }
+});
 
 document.querySelectorAll('.preview-tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -659,6 +1189,47 @@ document.querySelectorAll('.preview-tab').forEach(tab => {
   });
 });
 
+charSetBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    charSetBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const set = btn.dataset.set;
+    if (asciiOriginal) {
+      asciiResult = applyCharSet(asciiOriginal, set);
+      asciiOutput.textContent = asciiResult;
+    }
+  });
+});
+
+btnCopy.addEventListener('click', async () => {
+  const text = asciiOutput.textContent;
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    btnCopy.textContent = '✔ copied';
+    btnCopy.classList.add('copied');
+    setTimeout(() => {
+      btnCopy.textContent = '📋 copy';
+      btnCopy.classList.remove('copied');
+    }, 2000);
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btnCopy.textContent = '✔ copied';
+    btnCopy.classList.add('copied');
+    setTimeout(() => {
+      btnCopy.textContent = '📋 copy';
+      btnCopy.classList.remove('copied');
+    }, 2000);
+  }
+});
+
 btnConvert.addEventListener('click', async () => {
   if (!selectedFile) return;
 
@@ -666,7 +1237,7 @@ btnConvert.addEventListener('click', async () => {
   convertBar.classList.add('active');
   successBadge.style.display = 'none';
   errorMsg.classList.remove('active');
-  footerPrompt.textContent = 'converting...';
+  footerStatus.textContent = 'converting...';
 
   const formData = new FormData();
   formData.append('image', selectedFile);
@@ -679,14 +1250,16 @@ btnConvert.addEventListener('click', async () => {
       showError(data.error);
       convertBar.classList.remove('active');
       btnConvert.disabled = false;
-      footerPrompt.textContent = 'error — try again';
+      footerStatus.textContent = 'error — try again';
       return;
     }
 
-    asciiResult = data.ascii;
-    pngDataUrl = data.pngDataUrl;
-
+    asciiOriginal = data.ascii;
+    const activeSet = document.querySelector('.char-set-btn.active');
+    asciiResult = applyCharSet(asciiOriginal, activeSet ? activeSet.dataset.set : 'standard');
     asciiOutput.textContent = asciiResult;
+
+    pngDataUrl = data.pngDataUrl;
 
     setTimeout(() => {
       outputPreview.src = pngDataUrl;
@@ -702,13 +1275,13 @@ btnConvert.addEventListener('click', async () => {
     downloadBtn.href = pngDataUrl;
     downloadLabel.textContent = selectedFile.name.replace(/\.[^.]+$/, '') + '_ascii.png';
 
-    footerPrompt.textContent = 'conversion complete';
+    footerStatus.textContent = 'conversion complete ✓';
 
   } catch (err) {
     showError('Connection failed. Is the server running?');
     convertBar.classList.remove('active');
     btnConvert.disabled = false;
-    footerPrompt.textContent = 'connection error';
+    footerStatus.textContent = 'connection error';
   }
 });
 

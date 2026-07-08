@@ -2,5 +2,5 @@ services:
   - type: web
     name: ascii-img
     env: go
-    buildCommand: go build -o img2ascii
-    startCommand: ./img2ascii
+    buildCommand: go build -o pic2ascii
+    startCommand: ./pic2ascii

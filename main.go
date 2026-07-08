@@ -75,7 +75,7 @@ func main() {
 		port = p
 	}
 
-	fmt.Printf("• ASCII Art Converter •\n")
+	fmt.Printf("• PIC2ASCII — Selfie & Photo to ASCII Converter •\n")
 	fmt.Printf("  Server running at http://localhost:%s\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, handler))
 }
